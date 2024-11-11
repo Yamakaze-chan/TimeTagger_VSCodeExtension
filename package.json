@@ -1,0 +1,87 @@
+{
+  "name": "tte",
+  "displayName": "TimeTagger Extension",
+  "description": "TimeTagger for VSCode",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "icon": "media/timetaggerLogo.png",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tte.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tte-sidebar-view",
+          "title": "TimeTagger Extension",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "TimeTagger Extension",
+      "properties": {
+        "tte.serverUrl": {
+          "type": "string",
+          "default": "https://timetagger.app/api/v2/",
+          "description": "Please add your TimeTagger server"
+        },
+        "tte.token": {
+          "type": "string",
+          "default": "",
+          "description": "Please add your TimeTagger token"
+        }
+      }
+    },
+    "views": {
+      "tte-sidebar-view": [
+        {
+          "type": "webview",
+          "id": "tte-sidebar",
+          "name": "TimeTaggerExtension",
+          "icon": "media/icon.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.9",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.13.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "axios": "^1.7.7"
+  }
+}

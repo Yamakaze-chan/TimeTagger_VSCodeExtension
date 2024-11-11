@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html {
+        box-sizing: border-box;
+        font-size: 13px;
+      }
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      body,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      ol,
+      ul {
+        margin: 0;
+        padding: 0;
+        font-weight: normal;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      :root {
+        --container-padding: 20px;
+        --input-padding-vertical: 6px;
+        --input-padding-horizontal: 4px;
+        --input-margin-vertical: 4px;
+        --input-margin-horizontal: 0;
+      }
+
+      body {
+        padding: 0 var(--container-padding);
+        color: var(--vscode-foreground);
+        font-size: var(--vscode-font-size);
+        font-weight: var(--vscode-font-weight);
+        font-family: var(--vscode-font-family);
+        background-color: var(--vscode-editor-background);
+      }
+
+      ol,
+      ul {
+        padding-left: var(--container-padding);
+      }
+
+      body > *,
+      form > * {
+        margin-block-start: var(--input-margin-vertical);
+        margin-block-end: var(--input-margin-vertical);
+      }
+
+      *:focus {
+        outline-color: var(--vscode-focusBorder) !important;
+      }
+
+      a {
+        color: var(--vscode-textLink-foreground);
+      }
+
+      a:hover,
+      a:active {
+        color: var(--vscode-textLink-activeForeground);
+      }
+
+      code {
+        font-size: var(--vscode-editor-font-size);
+        font-family: var(--vscode-editor-font-family);
+      }
+
+      button {
+        border: none;
+        padding: var(--input-padding-vertical) var(--input-padding-horizontal);
+        width: 100%;
+        text-align: center;
+        outline: 1px solid transparent;
+        outline-offset: 2px !important;
+        color: var(--vscode-button-foreground);
+      }
+
+      button:hover {
+        cursor: pointer;
+        background: var(--vscode-button-hoverBackground);
+      }
+
+      button:focus {
+        outline-color: var(--vscode-focusBorder);
+      }
+
+      button.secondary {
+        color: var(--vscode-button-secondaryForeground);
+        background: var(--vscode-button-secondaryBackground);
+      }
+
+      button.secondary:hover {
+        background: var(--vscode-button-secondaryHoverBackground);
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--vscode-input-placeholderForeground);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TimeTagger Extension for VSCode</h1>
+    <h2>NEW RECORD</h2>
+    <div id="time_option_block">
+      <label>Description:</label>
+      <input
+        style="border-top: 0px; border-left: 0px; border-right: 0px"
+        id="description"
+      />
+      <br />
+      <label>Start date:</label>
+      <input type="date" id="start_date" onchange="updateTime()" required />
+      <label>Start time:</label>
+      <input type="time" id="start_time" onchange="updateTime()" required />
+      <br />
+      <div id="time_option_timer">
+        <label>Timer:</label>
+        <label id="hours">00</label>
+        <label id="colon">:</label>
+        <label id="minutes">00</label>
+        <label id="colon">:</label>
+        <label id="seconds">00</label>
+      </div>
+      <button type="button" id="time_option_btn" onclick="startTime()">
+        Start
+      </button>
+    </div>
+    <br><br>
+    <h2>GET RECORDS</h2>
+    <label>Start date:</label>
+    <input type="date" id="get_records_date" required />
+    <label>Start time:</label>
+    <input type="time" id="get_records_time" required />
+    <button type="button" id="get_records" onClick="getRecord()">
+      get record
+    </button>
+    <table id="records_table">
+      
+    </table>
+
+    <script type="text/javascript">
+      //Init var
+      //VSCode Function
+      const vscode = acquireVsCodeApi();
+      var hoursLabel = document.getElementById("hours");
+      var minutesLabel = document.getElementById("minutes");
+      var secondsLabel = document.getElementById("seconds");
+      var totalSeconds = 0;
+      var timeInterval;
+      var runningTime = false;
+
+      //onStart
+      function checkRecord(){
+        vscode.postMessage(
+          JSON.parse(
+            JSON.stringify({
+              type: "CheckRecord"
+            })
+          )
+        );
+      }
+      // checkRecord();
+      setInterval(getRecord, 1000)
+      setInterval(checkRecord,1000)
+
+      //onClick
+      function startTime() {
+          if (!runningTime) {
+            vscode.postMessage(
+            JSON.parse(
+              JSON.stringify({
+                type: "StartRecord",
+                startTime: document.getElementById("start_time").value + " " + document.getElementById("start_date").value,
+                des: document.getElementById("description").value
+              })
+            )
+          );
+          //timeInterval = setInterval(setTime, 1000);
+          //runningTime = true;
+          document.getElementById("time_option_btn").textContent = "End";
+        } else {
+          totalSeconds = 0;
+          runningTime = false;
+          let theMomment = new Date();
+          document.getElementById("start_time").defaultValue =
+            theMomment.toLocaleTimeString("vi-VN", {
+              hour12: false,
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric",
+            });
+          document.getElementById("start_date").value = [
+            theMomment.getFullYear(),
+            (theMomment.getMonth() + 1).toString().padStart(2, "0"),
+            theMomment.getDate().toString().padStart(2, "0"),
+          ].join("-");
+          hoursLabel.innerHTML = "00";
+          minutesLabel.innerHTML = "00";
+          secondsLabel.innerHTML = "00";
+          document.getElementById("time_option_btn").textContent = "Start";
+          putRecord(
+            document.getElementById("description").value,
+            Date.parse(
+              document.getElementById("start_date").value.replaceAll("-", "/") +
+                " " +
+                document.getElementById("start_time").value
+            ) / 1000,
+            Date.parse(new Date()) / 1000
+          );
+          // clearInterval(timeInterval);
+        }
+      }
+
+      //onChange
+      function updateTime() {
+        totalSeconds =
+          Date.parse(new Date()) -
+          Date.parse(
+            document.getElementById("start_date").value.replaceAll("-", "/") +
+              " " +
+              document.getElementById("start_time").value
+          );
+        totalSeconds = parseInt(totalSeconds / 1000);
+      }
+
+      //Other function
+
+      function setTime(time) {
+        //++totalSeconds;
+        //let timeLabes = totalSeconds.toString().toHHMMSS();
+        let timeLabes = ((Date.now()/1000) - time).toString().toHHMMSS();
+        secondsLabel.innerHTML = timeLabes[2];
+        minutesLabel.innerHTML = timeLabes[1];
+        hoursLabel.innerHTML = timeLabes[0];
+      }
+
+      String.prototype.toHHMMSS = function () {
+        var sec_num = parseInt(this, 10); // don't forget the second param
+        var hours = Math.floor(sec_num / 3600);
+        var minutes = Math.floor((sec_num - hours * 3600) / 60);
+        var seconds = sec_num - hours * 3600 - minutes * 60;
+
+        if (hours < 10) {
+          hours = "0" + hours;
+        }
+        if (minutes < 10) {
+          minutes = "0" + minutes;
+        }
+        if (seconds < 10) {
+          seconds = "0" + seconds;
+        }
+        return [hours, minutes, seconds];
+      };
+
+      function timestampTodatetime(timestamp) {
+        let date = new Date(timestamp * 1000);
+        let day =
+          (date.getMonth() + 1).toString().padStart(2, "0") +
+          "/" +
+          date.getDate().toString().padStart(2, "0") +
+          "/" +
+          date.getFullYear() +
+          " ";
+        let time =
+          date.getHours().toString().padStart(2, "0") +
+          ":" +
+          date.getMinutes().toString().padStart(2, "0") +
+          ":" +
+          date.getSeconds().toString().padStart(2, "0");
+        return "Day: " + day + "Time: " + time;
+      }
+      
+      // Handle the message inside the webview
+      window.addEventListener("message", (event) => {
+        const message = event.data; // The JSON data our extension sent
+
+        switch (message.command) {
+          case "returnGetRecord": {
+            let table_cols =
+              "<tr><th>Description</th><th>From</th><th>To</th></tr>";
+            console.log(message.records)
+            message.records.filter(r=>!r.ds?.includes("HIDDEN")).forEach(
+              (data) =>
+                {table_cols +=
+                  "<tr><td>" +
+                  (data.ds !== undefined ? data.ds : "") +
+                  "</td><td>" +
+                  timestampTodatetime(data.t1) +
+                  "</td><td>" +
+                  (data.t2 != data.t1 ? timestampTodatetime(data.t2) : "Running") +
+                  "</td></tr>"}
+            );
+            console.log(table_cols)
+            document.getElementById("records_table").innerHTML = table_cols;
+            break;
+          }
+          case "timeStop": {
+            runningTime = false;
+            // totalSeconds = 0;
+            // clearInterval(timeInterval);
+            let currentTime = new Date();
+            document.getElementById("time_option_btn").textContent = "Start";
+            document.getElementById("start_time").defaultValue =
+              currentTime.toLocaleTimeString("vi-VN", {
+                hour12: false,
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+              });
+            document.getElementById("start_date").value = [
+              currentTime.getFullYear(),
+              (currentTime.getMonth() + 1).toString().padStart(2, "0"),
+              currentTime.getDate().toString().padStart(2, "0"),
+            ].join("-");
+            document.getElementById("get_records_time").defaultValue = "01:00:01";
+            document.getElementById("get_records_date").value = [
+              currentTime.getFullYear(),
+              (currentTime.getMonth() + 1).toString().padStart(2, "0"),
+              currentTime.getDate().toString().padStart(2, "0"),
+            ].join("-");
+            // updateTime();
+            hoursLabel.innerHTML = "00";
+            minutesLabel.innerHTML = "00";
+            secondsLabel.innerHTML = "00";
+            break;
+          }
+          case "timeRunning": {
+            // timeInterval = setInterval(setTime, 1000);
+            runningTime = true;
+            setTime(message.startTime)
+            document.getElementById("time_option_btn").textContent = "End";
+            document.getElementById("description").value = (message.des!==undefined?message.des:"");
+            let currentTime = new Date(message.startTime *1000);
+            document.getElementById("start_time").defaultValue =
+              currentTime.toLocaleTimeString("vi-VN", {
+                hour12: false,
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+              });
+            document.getElementById("start_date").value = [
+              currentTime.getFullYear(),
+              (currentTime.getMonth() + 1).toString().padStart(2, "0"),
+              currentTime.getDate().toString().padStart(2, "0"),
+            ].join("-");
+            document.getElementById("get_records_time").defaultValue = "01:00:01";
+            document.getElementById("get_records_date").value = [
+              currentTime.getFullYear(),
+              (currentTime.getMonth() + 1).toString().padStart(2, "0"),
+              currentTime.getDate().toString().padStart(2, "0"),
+            ].join("-");
+            // updateTime();
+            break;
+          }
+        }
+      });
+      function getRecord() {
+        vscode.postMessage({
+          type: "GetRecord",
+          timeSince: document.getElementById("get_records_time").value + " " + document.getElementById("get_records_date").value,
+        });
+      }
+      function putRecord(description, timeFrom, timeTo) {
+        vscode.postMessage(
+          JSON.parse(
+            JSON.stringify({
+              type: "StopRecord",
+              des: description
+            })
+          )
+        );
+      }
+    </script>
+  </body>
+</html>
